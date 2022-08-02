@@ -28,7 +28,7 @@ def create_sym_hash(filename=None, data=None):
         return
 
     with magic.Magic() as m:
-        filetype = m.id_buffer(data[0:1000])
+        filetype = m.id_buffer(data[:1000])
 
     if 'Mach-O' not in filetype:
         print("Data provided is not a valid Mach-O filetype")
@@ -39,7 +39,7 @@ def create_sym_hash(filename=None, data=None):
     try:
         macho_parser.parse()
     except MachOParserError as e:
-        print("Error {}".format(e))
+        print(f"Error {e}")
         return
 
     sym_dict = {}
@@ -47,19 +47,20 @@ def create_sym_hash(filename=None, data=None):
     for entity in macho_parser.entities:
         if entity.magic_str != 'Universal':
 
-            entity_string = "{} {} {}".format(entity.cpu_type_str,
-                                              entity.filetype_str,
-                                              entity.magic_str)
+            entity_string = f"{entity.cpu_type_str} {entity.filetype_str} {entity.magic_str}"
+
 
             sym_list = []
 
             for cmd in entity.cmdlist:
                 if cmd['cmd'] == MachOEntity.LC_SYMTAB:
-                    for sym in cmd['symbols']:
-                        if not sym['is_stab']:
-                            if sym['external'] is True:
-                                if sym['n_type'] == '0x00':
-                                    sym_list.append(sym.get('string', '').decode())
+                    sym_list.extend(
+                        sym.get('string', '').decode()
+                        for sym in cmd['symbols']
+                        if not sym['is_stab']
+                        and sym['external'] is True
+                        and sym['n_type'] == '0x00'
+                    )
 
             symhash = md5(','.join(sorted(sym_list)).encode()).hexdigest()
             sym_dict[entity_string] = symhash

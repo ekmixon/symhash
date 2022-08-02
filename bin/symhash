@@ -39,10 +39,10 @@ def main():
 
     if options.verbose:
         for k, v in iteritems(s):
-            print("SymHash for {}: {}".format(k, v))
+            print(f"SymHash for {k}: {v}")
     else:
         for k, v in iteritems(s):
-            print("{}: {}".format(k, v))
+            print(f"{k}: {v}")
 
 if __name__ == '__main__':
     main()
